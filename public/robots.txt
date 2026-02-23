@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: http://76.13.62.62/sitemap.xml

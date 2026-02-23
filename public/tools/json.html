@@ -1,0 +1,8 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>JSON Formatter & Validator Online Free</title><meta name=description content="Validate and format JSON online for free."><link rel=stylesheet href="/tools/_shared.css"></head><body><a href=/tools/>← All tools</a><h1>JSON Formatter & Validator <span class=pill>free</span></h1><div class=box><label>JSON input</label><textarea id=in rows=14 placeholder='{"hello":"world"}'></textarea><div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button id=format>Format</button><button id=min>Minify</button><button id=copy>Copy output</button></div><div id=status class=muted style="margin-top:10px"></div><label style="margin-top:10px">Output</label><textarea id=out rows=14></textarea></div><script>
+const $=id=>document.getElementById(id);
+function ok(msg){$('status').textContent=msg; $('status').className='ok';}
+function bad(msg){$('status').textContent=msg; $('status').className='bad';}
+$('format').onclick=()=>{try{const v=JSON.parse($('in').value);$('out').value=JSON.stringify(v,null,2)+'\n';ok('Valid JSON');}catch(e){bad('Invalid JSON: '+e.message);} };
+$('min').onclick=()=>{try{const v=JSON.parse($('in').value);$('out').value=JSON.stringify(v);ok('Valid JSON');}catch(e){bad('Invalid JSON: '+e.message);} };
+$('copy').onclick=async()=>{await navigator.clipboard.writeText($('out').value||'');};
+</script></body></html>

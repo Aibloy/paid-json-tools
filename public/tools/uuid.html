@@ -1,0 +1,12 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>UUID Generator Online Free — v4 UUIDs</title><meta name=description content="Generate UUID v4 online for free. Fast and private."><link rel=stylesheet href="/tools/_shared.css"></head><body><a href=/tools/>← All tools</a><h1>UUID Generator <span class=pill>free</span></h1><div class=box><div class=row><div style="flex:1;min-width:260px"><label>Count</label><input id=count type=number value=10 min=1 max=500></div><div style=align-self:flex-end><button id=gen>Generate</button><button id=copy>Copy</button></div></div><pre id=out class=box style="white-space:pre-wrap"></pre></div><script>
+const $=id=>document.getElementById(id);
+function uuidv4(){
+  const b=new Uint8Array(16); crypto.getRandomValues(b);
+  b[6]=(b[6]&0x0f)|0x40; b[8]=(b[8]&0x3f)|0x80;
+  const h=[...b].map(x=>x.toString(16).padStart(2,'0'));
+  return `${h.slice(0,4).join('')}-${h.slice(4,6).join('')}-${h.slice(6,8).join('')}-${h.slice(8,10).join('')}-${h.slice(10,16).join('')}`;
+}
+$('gen').onclick=()=>{const n=Math.max(1,Math.min(500,Number($('count').value||10)));$('out').textContent=Array.from({length:n},uuidv4).join('\n')+'\n';};
+$('copy').onclick=async()=>{await navigator.clipboard.writeText($('out').textContent||'');};
+$('gen').click();
+</script></body></html>
