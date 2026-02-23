@@ -1,0 +1,20 @@
+{
+  "name": "paid-json-tools",
+  "version": "1.0.0",
+  "description": "Paid mini web-tools with on-chain unlock",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node --env-file=.env server.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "ethers": "^6.16.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

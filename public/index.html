@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paid JSON Tools – JSON to CSV, Pretty Print (Unlock $1)</title>
+  <meta name="description" content="Fast server-side JSON tools. Pay $1 in USDT (Polygon/Arbitrum/Optimism/Base) to unlock for 30 days." />
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; max-width: 980px; }
+    code, pre, textarea, input, select { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .box { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    input, textarea, select, button { width: 100%; padding: 10px; font-size: 14px; }
+    button { width: auto; cursor: pointer; }
+    .muted { color: #555; }
+    .ok { color: #0a7; font-weight: 700; }
+    .bad { color: #b00; font-weight: 700; }
+    .pill { display:inline-block; padding:2px 8px; border-radius:999px; background:#f2f2f2; margin-left:6px; }
+    .tools { display:grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 900px) { .tools { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Paid JSON Tools <span class="pill">$1 unlock</span></h1>
+  <p class="muted">Small, fast web utilities for developers. Pay once in USDT on a cheap EVM chain, unlock for 30 days.</p>
+
+  <div class="box" id="payBox">
+    <h2>1) Unlock</h2>
+    <div id="cfg" class="muted">Loading…</div>
+
+    <div class="row">
+      <div style="flex:1; min-width: 240px;">
+        <label>Chain</label>
+        <select id="chain"></select>
+      </div>
+      <div style="flex:2; min-width: 360px;">
+        <label>Tx hash</label>
+        <input id="txHash" placeholder="0x…" />
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="verifyBtn">Verify & Unlock</button>
+      </div>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="box">
+    <h2>2) Tools</h2>
+    <div class="muted">These run server-side and require an unlock token.</div>
+
+    <div class="tools" style="margin-top: 12px;">
+      <div class="box" style="margin:0;">
+        <h3>JSON → CSV</h3>
+        <label>JSON array of objects</label>
+        <textarea id="jsonRows" rows="10" placeholder='[{"a":1,"b":"x"},{"a":2,"b":"y"}]'></textarea>
+        <div style="margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+          <button id="csvBtn" disabled>Convert & Download CSV</button>
+          <span id="unlockNote" class="bad">Locked</span>
+        </div>
+        <pre id="csvPreview" class="muted" style="white-space:pre-wrap; margin-top:10px;"></pre>
+      </div>
+
+      <div class="box" style="margin:0;">
+        <h3>JSON Pretty Print</h3>
+        <label>Any JSON</label>
+        <textarea id="jsonAny" rows="10" placeholder='{"hello":"world"}'></textarea>
+        <div style="margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+          <button id="prettyBtn" disabled>Format & Download JSON</button>
+        </div>
+        <pre id="prettyPreview" class="muted" style="white-space:pre-wrap; margin-top:10px;"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>API</h2>
+    <div class="muted">Use the same token in <code>Authorization: Bearer …</code></div>
+    <pre class="muted" style="white-space:pre-wrap;">POST /api/json-to-csv   {"rows": [...]}
+POST /api/json-pretty   {"value": ...}</pre>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const state = { token: localStorage.getItem('proToken') || '', cfg: null };
+
+  function setLocked(locked) {
+    $('csvBtn').disabled = locked;
+    $('prettyBtn').disabled = locked;
+    $('unlockNote').textContent = locked ? 'Locked' : 'Unlocked';
+    $('unlockNote').className = locked ? 'bad' : 'ok';
+  }
+
+  async function loadConfig() {
+    const r = await fetch('/config');
+    const cfg = await r.json();
+    state.cfg = cfg;
+
+    $('cfg').innerHTML = `Pay <b>${cfg.priceUnits} USDT</b> to:<br><code>${cfg.payTo}</code>`;
+
+    $('chain').innerHTML = (cfg.chains || []).map(c =>
+      `<option value="${c.key}">${c.name} (USDT ${c.token.address.slice(0,6)}…${c.token.address.slice(-4)})</option>`
+    ).join('');
+  }
+
+  function download(name, text, mime) {
+    const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function api(path, body) {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.token}`
+      },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => null);
+      throw new Error(j?.error || `http_${r.status}`);
+    }
+    return await r.text();
+  }
+
+  $('verifyBtn').onclick = async () => {
+    $('status').textContent = '';
+    try {
+      const txHash = $('txHash').value.trim();
+      const chain = $('chain').value;
+      const r = await fetch('/verify', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ txHash, chain })
+      });
+      const j = await r.json();
+      if (!j.ok) {
+        $('status').innerHTML = `<span class="bad">Not unlocked: ${j.error}</span>`;
+        return;
+      }
+      state.token = j.token;
+      localStorage.setItem('proToken', state.token);
+      setLocked(false);
+      $('status').innerHTML = `<span class="ok">Unlocked for 30 days.</span>`;
+    } catch (e) {
+      $('status').innerHTML = `<span class="bad">Error.</span>`;
+    }
+  };
+
+  $('csvBtn').onclick = async () => {
+    $('csvPreview').textContent = '';
+    try {
+      const rows = JSON.parse($('jsonRows').value);
+      const csv = await api('/api/json-to-csv', { rows });
+      $('csvPreview').textContent = csv.slice(0, 1200);
+      download('out.csv', csv, 'text/csv;charset=utf-8');
+    } catch (e) {
+      $('csvPreview').textContent = `Error: ${e.message}`;
+    }
+  };
+
+  $('prettyBtn').onclick = async () => {
+    $('prettyPreview').textContent = '';
+    try {
+      const value = JSON.parse($('jsonAny').value);
+      const pretty = await api('/api/json-pretty', { value });
+      $('prettyPreview').textContent = pretty.slice(0, 2000);
+      download('pretty.json', pretty, 'application/json;charset=utf-8');
+    } catch (e) {
+      $('prettyPreview').textContent = `Error: ${e.message}`;
+    }
+  };
+
+  (async () => {
+    await loadConfig();
+    setLocked(!state.token);
+  })();
+</script>
+</body>
+</html>
