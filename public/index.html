@@ -21,8 +21,9 @@
   </style>
 </head>
 <body>
-  <h1>Paid JSON Tools <span class="pill">$1 unlock</span></h1>
-  <p class="muted">Small, fast web utilities for developers. Pay once in USDT on a cheap EVM chain, unlock for 30 days.</p>
+  <h1>On‑chain Unlock Starter Kit <span class="pill">$1 unlock</span></h1>
+  <p class="muted">Pay once in USDT to unlock a downloadable starter kit (Express + ERC‑20 verify + JWT gating) + bonus JSON tools. 30‑day token.</p>
+  <p class="muted">Source/open‑core: <a href="https://github.com/Aibloy/paid-json-tools" target="_blank" rel="noreferrer">github.com/Aibloy/paid-json-tools</a></p>
 
   <div class="box" id="payBox">
     <h2>1) Unlock</h2>
@@ -45,7 +46,15 @@
   </div>
 
   <div class="box">
-    <h2>2) Tools</h2>
+    <h2>2) Download</h2>
+    <div class="muted">After unlock, download the starter kit:</div>
+    <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+      <button id="dlBtn" disabled>Download starter kit (.tgz)</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>3) Bonus tools</h2>
     <div class="muted">These run server-side and require an unlock token.</div>
 
     <div class="tools" style="margin-top: 12px;">
@@ -83,9 +92,18 @@ POST /api/json-pretty   {"value": ...}</pre>
   const $ = (id) => document.getElementById(id);
   const state = { token: localStorage.getItem('proToken') || '', cfg: null };
 
+  function downloadUrl(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || '';
+    a.rel = 'noreferrer';
+    a.click();
+  }
+
   function setLocked(locked) {
     $('csvBtn').disabled = locked;
     $('prettyBtn').disabled = locked;
+    $('dlBtn').disabled = locked;
     $('unlockNote').textContent = locked ? 'Locked' : 'Unlocked';
     $('unlockNote').className = locked ? 'bad' : 'ok';
   }
@@ -150,6 +168,11 @@ POST /api/json-pretty   {"value": ...}</pre>
     } catch (e) {
       $('status').innerHTML = `<span class="bad">Error.</span>`;
     }
+  };
+
+  $('dlBtn').onclick = () => {
+    // token-gated download (query token for convenience)
+    downloadUrl(`/download/starter.tgz?token=${encodeURIComponent(state.token)}&ts=${Date.now()}`, 'onchain-unlock-starter.tgz');
   };
 
   $('csvBtn').onclick = async () => {

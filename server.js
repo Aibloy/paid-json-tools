@@ -104,6 +104,16 @@ function getAllChainKeys() {
 }
 
 function authRequired(req, res, next) {
+  // allow token in query for simple downloads (still JWT-verified)
+  const q = req.query?.token;
+  if (q && typeof q === 'string') {
+    try {
+      req.user = jwt.verify(q, JWT_SECRET);
+      return next();
+    } catch {
+      // fall through
+    }
+  }
   const auth = req.headers.authorization || '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
   if (!m) return res.status(401).json({ ok: false, error: 'missing_token' });
@@ -197,7 +207,14 @@ app.get('/me', authRequired, (req, res) => {
   return res.json({ ok: true, payload: req.user });
 });
 
-// ---- Paid API endpoints (JWT-gated) ----
+// ---- Paid downloads + API endpoints (JWT-gated) ----
+app.get('/download/starter.tgz', authRequired, (req, res) => {
+  // higher-value deliverable: the starter kit archive
+  const fp = path.resolve('downloads/onchain-unlock-starter.tgz');
+  return res.download(fp, 'onchain-unlock-starter.tgz');
+});
+
+
 function rowsToCSV(rows) {
   const keys = Array.from(
     rows.reduce((s, r) => {
